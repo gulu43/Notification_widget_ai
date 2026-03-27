@@ -18,7 +18,7 @@
             android:layout_gravity="center"
             android:src="@drawable/circle_bg" />
         <ImageView
-            android:id="@+id/ic_ring"
+            android:id="@+id/icon_ring"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_gravity="center"
@@ -43,7 +43,7 @@
             android:layout_gravity="center"
             android:src="@drawable/circle_bg" />
         <ImageView
-            android:id="@+id/ic_vibrate"
+            android:id="@+id/icon_vibrate"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_gravity="center"
@@ -68,7 +68,7 @@
             android:layout_gravity="center"
             android:src="@drawable/circle_bg" />
         <ImageView
-            android:id="@+id/ic_silent"
+            android:id="@+id/icon_silent"
             android:layout_width="30dp"
             android:layout_height="30dp"
             android:layout_gravity="center"

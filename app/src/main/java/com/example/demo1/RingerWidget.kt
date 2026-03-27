@@ -7,6 +7,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.media.AudioManager
 import android.os.Build
 import android.provider.Settings
@@ -26,9 +27,9 @@ class RingerWidget : AppWidgetProvider() {
 
             // Setup modes and their respective views
             val config = listOf(
-                Triple(AudioManager.RINGER_MODE_NORMAL, R.id.bg_ring, R.id.ic_ring),
-                Triple(AudioManager.RINGER_MODE_VIBRATE, R.id.bg_vibrate, R.id.ic_vibrate),
-                Triple(AudioManager.RINGER_MODE_SILENT, R.id.bg_silent, R.id.ic_silent)
+                Triple(AudioManager.RINGER_MODE_NORMAL, R.id.bg_ring, R.id.icon_ring),
+                Triple(AudioManager.RINGER_MODE_VIBRATE, R.id.bg_vibrate, R.id.icon_vibrate),
+                Triple(AudioManager.RINGER_MODE_SILENT, R.id.bg_silent, R.id.icon_silent)
             )
             
             val btnIds = listOf(R.id.btn_ring, R.id.btn_vibrate, R.id.btn_silent)
@@ -39,19 +40,16 @@ class RingerWidget : AppWidgetProvider() {
                 val isActive = currentMode == mode
 
                 // Set alpha for button container (1.0f if active, 0.31f if inactive)
-// setFloat calls "setAlpha" on the view with the provided float value
                 views.setFloat(btnId, "setAlpha", if (isActive) 1.0f else 0.31f)
                 
                 // Set circle background visibility (255 if active, 0 if inactive)
                 views.setInt(bgId, "setImageAlpha", if (isActive) 255 else 0)
 
-                // Set icon tint
-                val tintColor = if (mode == AudioManager.RINGER_MODE_NORMAL && isActive) {
-                    ContextCompat.getColor(context, R.color.icon_ring)
-                } else if (isActive) {
-                    ContextCompat.getColor(context, android.R.color.white)
+                // Set icon tint (Red #E53935 if active, #8FA896 if inactive)
+                val tintColor = if (isActive) {
+                    Color.parseColor("#E53935")
                 } else {
-                    ContextCompat.getColor(context, R.color.icon_inactive)
+                    Color.parseColor("#8FA896")
                 }
                 views.setInt(icId, "setColorFilter", tintColor)
 
@@ -94,7 +92,27 @@ class RingerWidget : AppWidgetProvider() {
                     context.startActivity(settingsIntent)
                 } else {
                     try {
-                        audioManager.ringerMode = targetMode
+                        // For Silent mode, some devices work better if we use adjustStreamVolume or set ringerMode multiple times
+                        if (targetMode == AudioManager.RINGER_MODE_NORMAL) {
+                            audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+                            audioManager.setStreamVolume(AudioManager.STREAM_RING, audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0)
+                            audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION), 0)
+                            audioManager.setStreamVolume(AudioManager.STREAM_SYSTEM, audioManager.getStreamMaxVolume(AudioManager.STREAM_SYSTEM), 0)
+                        } else {
+                            // Set Ringer Mode first
+                            audioManager.ringerMode = targetMode
+                            
+                            // Then explicitly mute streams to ensure "Silent" doesn't just "Vibrate"
+                            val volumeValue = 0
+                            audioManager.setStreamVolume(AudioManager.STREAM_RING, volumeValue, 0)
+                            audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, volumeValue, 0)
+                            audioManager.setStreamVolume(AudioManager.STREAM_SYSTEM, volumeValue, 0)
+                            
+                            // Double check ringer mode for Silent
+                            if (targetMode == AudioManager.RINGER_MODE_SILENT) {
+                                audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+                            }
+                        }
                     } catch (e: SecurityException) {
                         val settingsIntent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
