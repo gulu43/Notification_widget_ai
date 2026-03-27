@@ -84,41 +84,77 @@ class RingerWidget : AppWidgetProvider() {
             if (targetMode != -1) {
                 val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
                 val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                val prefs = context.getSharedPreferences("ringer_prefs", Context.MODE_PRIVATE)
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !notificationManager.isNotificationPolicyAccessGranted) {
-                    val settingsIntent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(settingsIntent)
-                } else {
-                    try {
-                        // For Silent mode, some devices work better if we use adjustStreamVolume or set ringerMode multiple times
-                        if (targetMode == AudioManager.RINGER_MODE_NORMAL) {
-                            audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
-                            audioManager.setStreamVolume(AudioManager.STREAM_RING, audioManager.getStreamMaxVolume(AudioManager.STREAM_RING), 0)
-                            audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION), 0)
-                            audioManager.setStreamVolume(AudioManager.STREAM_SYSTEM, audioManager.getStreamMaxVolume(AudioManager.STREAM_SYSTEM), 0)
-                        } else {
-                            // Set Ringer Mode first
-                            audioManager.ringerMode = targetMode
-                            
-                            // Then explicitly mute streams to ensure "Silent" doesn't just "Vibrate"
-                            val volumeValue = 0
-                            audioManager.setStreamVolume(AudioManager.STREAM_RING, volumeValue, 0)
-                            audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, volumeValue, 0)
-                            audioManager.setStreamVolume(AudioManager.STREAM_SYSTEM, volumeValue, 0)
-                            
-                            // Double check ringer mode for Silent
-                            if (targetMode == AudioManager.RINGER_MODE_SILENT) {
-                                audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-                            }
+                try {
+                    // Step 1: Save volume if currently in RING mode
+                    if (audioManager.ringerMode == AudioManager.RINGER_MODE_NORMAL) {
+                        val currentVol = audioManager.getStreamVolume(AudioManager.STREAM_RING)
+                        if (currentVol > 0) {
+                            prefs.edit().putInt("saved_ring_volume", currentVol).apply()
                         }
-                    } catch (e: SecurityException) {
+                    }
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !notificationManager.isNotificationPolicyAccessGranted) {
                         val settingsIntent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
                             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         }
                         context.startActivity(settingsIntent)
+                        return
                     }
+
+                    // Set Ringer Mode
+                    audioManager.ringerMode = targetMode
+
+                    if (targetMode == AudioManager.RINGER_MODE_NORMAL) {
+                        // Step 3: Restore volume
+                        val savedVol = prefs.getInt("saved_ring_volume", -1)
+                        val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_RING)
+                        val restoreVol = if (savedVol > 0) savedVol else (maxVol * 0.6).toInt()
+
+                        try {
+                            // Step 4: Use FLAG_SHOW_UI for Samsung Android 16 on STREAM_RING
+                            audioManager.setStreamVolume(AudioManager.STREAM_RING, restoreVol, AudioManager.FLAG_SHOW_UI)
+                            audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, restoreVol, 0)
+                            audioManager.setStreamVolume(AudioManager.STREAM_SYSTEM, audioManager.getStreamMaxVolume(AudioManager.STREAM_SYSTEM), 0)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    } else {
+                        // Step 2: Mute all relevant streams
+                        val streams = listOf(
+                            AudioManager.STREAM_RING,
+                            AudioManager.STREAM_NOTIFICATION,
+                            AudioManager.STREAM_ALARM,
+                            AudioManager.STREAM_SYSTEM,
+                            AudioManager.STREAM_MUSIC
+                        )
+
+                        for (stream in streams) {
+                            try {
+                                if (stream == AudioManager.STREAM_RING) {
+                                    // Step 4: Use FLAG_SHOW_UI for Samsung
+                                    audioManager.setStreamVolume(stream, 0, AudioManager.FLAG_SHOW_UI)
+                                } else {
+                                    audioManager.setStreamVolume(stream, 0, 0)
+                                }
+                            } catch (e: Exception) {
+                                // Skip protected streams
+                            }
+                        }
+                        
+                        // Double set for Silent to be sure
+                        if (targetMode == AudioManager.RINGER_MODE_SILENT) {
+                            audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+                        }
+                    }
+                } catch (se: SecurityException) {
+                    val settingsIntent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(settingsIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
 
                 // Refresh all widget instances
