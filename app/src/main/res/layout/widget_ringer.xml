@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <FrameLayout
+        android:id="@+id/btn_ring"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1">
+        <ImageView
+            android:id="@+id/bg_ring"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center"
+            android:src="@drawable/circle_bg" />
+        <ImageView
+            android:id="@+id/ic_ring"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_ring" />
+    </FrameLayout>
+
+    <ImageView
+        android:layout_width="1dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center"
+        android:background="#44FFFFFF" />
+
+    <FrameLayout
+        android:id="@+id/btn_vibrate"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1">
+        <ImageView
+            android:id="@+id/bg_vibrate"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center"
+            android:src="@drawable/circle_bg" />
+        <ImageView
+            android:id="@+id/ic_vibrate"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_vibrate" />
+    </FrameLayout>
+
+    <ImageView
+        android:layout_width="1dp"
+        android:layout_height="32dp"
+        android:layout_gravity="center"
+        android:background="#44FFFFFF" />
+
+    <FrameLayout
+        android:id="@+id/btn_silent"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1">
+        <ImageView
+            android:id="@+id/bg_silent"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_gravity="center"
+            android:src="@drawable/circle_bg" />
+        <ImageView
+            android:id="@+id/ic_silent"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_silent" />
+    </FrameLayout>
+</LinearLayout>
