@@ -1,9 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-  <path
-      android:fillColor="#FFFFFF"
-      android:pathData="M0,15h2V9H0v6zm3,2h2V7H3v10zm19,-8v6h2V9h-2zm-3,8h2V7h-2v10zM16.5,3h-9C6.67,3 6,3.67 6,4.5v15c0,0.83 0.67,1.5 1.5,1.5h9c0.83,0 1.5,-0.67 1.5,-1.5v-15c0,-0.83 -0.67,-1.5 -1.5,-1.5zM15,19H9V5h6v14z"/>
+
+    <!-- Two-tone effect: outer vibration bars at lower opacity -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.4"
+        android:pathData="M0,15L2,15L2,9L0,9L0,15Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.4"
+        android:pathData="M3,18L5,18L5,6L3,6L3,18Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.4"
+        android:pathData="M19,18L21,18L21,6L19,6L19,18Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.4"
+        android:pathData="M22,15L24,15L24,9L22,9L22,15Z"/>
+
+    <!-- Full opacity: center phone body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="1.0"
+        android:pathData="M7,24L17,24C18.1,24 19,23.1 19,22L19,2C19,0.9 18.1,0 17,0L7,0C5.9,0 5,0.9 5,2L5,22C5,23.1 5.9,24 7,24ZM7,4L17,4L17,20L7,20L7,4Z"/>
+
 </vector>

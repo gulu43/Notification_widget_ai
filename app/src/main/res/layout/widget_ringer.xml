@@ -15,23 +15,17 @@
         android:layout_weight="1">
         <ImageView
             android:id="@+id/bg_ring"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
             android:layout_gravity="center"
             android:src="@drawable/circle_bg_glass" />
         <ImageView
             android:id="@+id/icon_ring"
-            android:layout_width="26dp"
-            android:layout_height="26dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:layout_gravity="center"
             android:src="@drawable/ic_ring"/>
     </FrameLayout>
-
-    <ImageView
-        android:layout_width="1dp"
-        android:layout_height="28dp"
-        android:layout_gravity="center"
-        android:background="#44FFFFFF"/>
 
     <FrameLayout
         android:id="@+id/btn_vibrate"
@@ -40,23 +34,17 @@
         android:layout_weight="1">
         <ImageView
             android:id="@+id/bg_vibrate"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
             android:layout_gravity="center"
             android:src="@drawable/circle_bg_glass" />
         <ImageView
             android:id="@+id/icon_vibrate"
-            android:layout_width="26dp"
-            android:layout_height="26dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:layout_gravity="center"
             android:src="@drawable/ic_vibrate"/>
     </FrameLayout>
-
-    <ImageView
-        android:layout_width="1dp"
-        android:layout_height="28dp"
-        android:layout_gravity="center"
-        android:background="#44FFFFFF"/>
 
     <FrameLayout
         android:id="@+id/btn_silent"
@@ -65,14 +53,14 @@
         android:layout_weight="1">
         <ImageView
             android:id="@+id/bg_silent"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="52dp"
+            android:layout_height="52dp"
             android:layout_gravity="center"
             android:src="@drawable/circle_bg_glass" />
         <ImageView
             android:id="@+id/icon_silent"
-            android:layout_width="26dp"
-            android:layout_height="26dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:layout_gravity="center"
             android:src="@drawable/ic_silent"/>
     </FrameLayout>
