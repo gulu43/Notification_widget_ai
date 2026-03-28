@@ -1,6 +1,5 @@
 package com.example.demo1
 
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -11,7 +10,6 @@ import android.graphics.Color
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
-import android.provider.Settings
 import android.widget.RemoteViews
 
 class RingerWidget : AppWidgetProvider() {
@@ -60,40 +58,67 @@ class RingerWidget : AppWidgetProvider() {
 
         fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, forcedMode: Int? = null) {
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            val currentMode = forcedMode ?: audioManager.ringerMode
+            val mode = forcedMode ?: audioManager.ringerMode
             val views = RemoteViews(context.packageName, R.layout.widget_ringer)
 
-            val config = listOf(
-                Triple(AudioManager.RINGER_MODE_NORMAL, R.id.bg_ring, R.id.icon_ring),
-                Triple(AudioManager.RINGER_MODE_VIBRATE, R.id.bg_vibrate, R.id.icon_vibrate),
-                Triple(AudioManager.RINGER_MODE_SILENT, R.id.bg_silent, R.id.icon_silent)
-            )
-            
+            // ---- RING is active ----
+            if (mode == AudioManager.RINGER_MODE_NORMAL) {
+                // Ring active
+                views.setInt(R.id.bg_ring,    "setImageAlpha", 255)
+                views.setInt(R.id.bg_ring,    "setColorFilter", Color.parseColor("#FFFFFF"))
+                views.setInt(R.id.icon_ring,  "setColorFilter", Color.parseColor("#E53935"))
+
+                // Vibrate inactive
+                views.setInt(R.id.bg_vibrate,   "setImageAlpha", 0)
+                views.setInt(R.id.icon_vibrate, "setColorFilter", Color.parseColor("#7A7A7A"))
+
+                // Silent inactive
+                views.setInt(R.id.bg_silent,   "setImageAlpha", 0)
+                views.setInt(R.id.icon_silent, "setColorFilter", Color.parseColor("#7A7A7A"))
+            }
+
+            // ---- VIBRATE is active ----
+            if (mode == AudioManager.RINGER_MODE_VIBRATE) {
+                // Vibrate active
+                views.setInt(R.id.bg_vibrate,   "setImageAlpha", 255)
+                views.setInt(R.id.bg_vibrate,   "setColorFilter", Color.parseColor("#FFFFFF"))
+                views.setInt(R.id.icon_vibrate, "setColorFilter", Color.parseColor("#E53935"))
+
+                // Ring inactive
+                views.setInt(R.id.bg_ring,   "setImageAlpha", 0)
+                views.setInt(R.id.icon_ring, "setColorFilter", Color.parseColor("#7A7A7A"))
+
+                // Silent inactive
+                views.setInt(R.id.bg_silent,   "setImageAlpha", 0)
+                views.setInt(R.id.icon_silent, "setColorFilter", Color.parseColor("#7A7A7A"))
+            }
+
+            // ---- SILENT is active ----
+            if (mode == AudioManager.RINGER_MODE_SILENT) {
+                // Silent active
+                views.setInt(R.id.bg_silent,   "setImageAlpha", 255)
+                views.setInt(R.id.bg_silent,   "setColorFilter", Color.parseColor("#FFFFFF"))
+                views.setInt(R.id.icon_silent, "setColorFilter", Color.parseColor("#E53935"))
+
+                // Ring inactive
+                views.setInt(R.id.bg_ring,   "setImageAlpha", 0)
+                views.setInt(R.id.icon_ring, "setColorFilter", Color.parseColor("#7A7A7A"))
+
+                // Vibrate inactive
+                views.setInt(R.id.bg_vibrate,   "setImageAlpha", 0)
+                views.setInt(R.id.icon_vibrate, "setColorFilter", Color.parseColor("#7A7A7A"))
+            }
+
+            val modes = listOf(AudioManager.RINGER_MODE_NORMAL, AudioManager.RINGER_MODE_VIBRATE, AudioManager.RINGER_MODE_SILENT)
             val btnIds = listOf(R.id.btn_ring, R.id.btn_vibrate, R.id.btn_silent)
 
-            config.forEachIndexed { index, triple ->
-                val (mode, bgId, icId) = triple
-                val btnId = btnIds[index]
-                val isActive = currentMode == mode
-
-                if (isActive) {
-                    // ACTIVE button — darker semi-transparent circle + full white icon
-                    views.setInt(icId, "setColorFilter", Color.parseColor("#FFFFFF"))
-                    views.setInt(bgId, "setImageAlpha", 255)
-                    views.setInt(bgId, "setColorFilter", Color.parseColor("#88FFFFFF"))
-                } else {
-                    // INACTIVE buttons — dimmed icon + circle fully hidden
-                    views.setInt(icId, "setColorFilter", Color.parseColor("#66FFFFFF"))
-                    views.setInt(bgId, "setImageAlpha", 0)
-                    views.setInt(bgId, "setColorFilter", Color.parseColor("#00000000"))
-                }
-
+            modes.forEachIndexed { index, m ->
                 val intent = Intent(context, RingerWidget::class.java).apply {
                     action = ACTION_CYCLE_RINGER
-                    putExtra(EXTRA_TARGET_MODE, mode)
+                    putExtra(EXTRA_TARGET_MODE, m)
                 }
-                val pendingIntent = PendingIntent.getBroadcast(context, mode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-                views.setOnClickPendingIntent(btnId, pendingIntent)
+                val pendingIntent = PendingIntent.getBroadcast(context, m, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                views.setOnClickPendingIntent(btnIds[index], pendingIntent)
             }
 
             appWidgetManager.updateAppWidget(appWidgetId, views)
@@ -112,7 +137,6 @@ class RingerWidget : AppWidgetProvider() {
             val targetMode = intent.getIntExtra(EXTRA_TARGET_MODE, -1)
             if (targetMode != -1) {
                 val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-
                 try {
                     when (targetMode) {
                         AudioManager.RINGER_MODE_NORMAL -> {
