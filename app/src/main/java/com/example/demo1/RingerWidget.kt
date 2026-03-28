@@ -9,10 +9,10 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.media.AudioManager
-import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.widget.RemoteViews
-import androidx.core.content.ContextCompat
 
 class RingerWidget : AppWidgetProvider() {
 
@@ -20,12 +20,49 @@ class RingerWidget : AppWidgetProvider() {
         const val ACTION_CYCLE_RINGER = "com.example.demo1.CYCLE_RINGER"
         const val EXTRA_TARGET_MODE = "target_mode"
 
-        fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int) {
+        const val PREFS_NAME = "ringer_prefs"
+        const val KEY_RING_VOL = "vol_ring"
+        const val KEY_NOTIF_VOL = "vol_notification"
+        const val KEY_ALARM_VOL = "vol_alarm"
+        const val KEY_SYSTEM_VOL = "vol_system"
+        const val KEY_MEDIA_VOL = "vol_media"
+        const val KEY_SAVED = "volumes_saved"
+
+        fun saveAllVolumes(context: Context, audio: AudioManager) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            if (prefs.getBoolean(KEY_SAVED, false)) return
+            
+            prefs.edit()
+                .putInt(KEY_RING_VOL,   audio.getStreamVolume(AudioManager.STREAM_RING))
+                .putInt(KEY_NOTIF_VOL,  audio.getStreamVolume(AudioManager.STREAM_NOTIFICATION))
+                .putInt(KEY_ALARM_VOL,  audio.getStreamVolume(AudioManager.STREAM_ALARM))
+                .putInt(KEY_SYSTEM_VOL, audio.getStreamVolume(AudioManager.STREAM_SYSTEM))
+                .putInt(KEY_MEDIA_VOL,  audio.getStreamVolume(AudioManager.STREAM_MUSIC))
+                .putBoolean(KEY_SAVED, true)
+                .apply()
+        }
+
+        fun restoreAllVolumes(context: Context, audio: AudioManager) {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            
+            fun getOrDefault(key: String, stream: Int): Int {
+                val saved = prefs.getInt(key, -1)
+                return if (saved > 0) saved else (audio.getStreamMaxVolume(stream) * 0.6).toInt()
+            }
+            
+            try { audio.setStreamVolume(AudioManager.STREAM_RING, getOrDefault(KEY_RING_VOL, AudioManager.STREAM_RING), AudioManager.FLAG_SHOW_UI) } catch (e: Exception) {}
+            try { audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, getOrDefault(KEY_NOTIF_VOL, AudioManager.STREAM_NOTIFICATION), 0) } catch (e: Exception) {}
+            try { audio.setStreamVolume(AudioManager.STREAM_ALARM, getOrDefault(KEY_ALARM_VOL, AudioManager.STREAM_ALARM), 0) } catch (e: Exception) {}
+            try { audio.setStreamVolume(AudioManager.STREAM_SYSTEM, getOrDefault(KEY_SYSTEM_VOL, AudioManager.STREAM_SYSTEM), 0) } catch (e: Exception) {}
+            
+            prefs.edit().putBoolean(KEY_SAVED, false).apply()
+        }
+
+        fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, forcedMode: Int? = null) {
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            val currentMode = audioManager.ringerMode
+            val currentMode = forcedMode ?: audioManager.ringerMode
             val views = RemoteViews(context.packageName, R.layout.widget_ringer)
 
-            // Setup modes and their respective views
             val config = listOf(
                 Triple(AudioManager.RINGER_MODE_NORMAL, R.id.bg_ring, R.id.icon_ring),
                 Triple(AudioManager.RINGER_MODE_VIBRATE, R.id.bg_vibrate, R.id.icon_vibrate),
@@ -39,31 +76,23 @@ class RingerWidget : AppWidgetProvider() {
                 val btnId = btnIds[index]
                 val isActive = currentMode == mode
 
-                // Set alpha for button container (1.0f if active, 0.31f if inactive)
-                views.setFloat(btnId, "setAlpha", if (isActive) 1.0f else 0.31f)
-                
-                // Set circle background visibility (255 if active, 0 if inactive)
-                views.setInt(bgId, "setImageAlpha", if (isActive) 255 else 0)
-
-                // Set icon tint (Red #E53935 if active, #8FA896 if inactive)
-                val tintColor = if (isActive) {
-                    Color.parseColor("#E53935")
+                if (isActive) {
+                    // ACTIVE button — darker semi-transparent circle + full white icon
+                    views.setInt(icId, "setColorFilter", Color.parseColor("#FFFFFF"))
+                    views.setInt(bgId, "setImageAlpha", 255)
+                    views.setInt(bgId, "setColorFilter", Color.parseColor("#88FFFFFF"))
                 } else {
-                    Color.parseColor("#8FA896")
+                    // INACTIVE buttons — dimmed icon + circle fully hidden
+                    views.setInt(icId, "setColorFilter", Color.parseColor("#66FFFFFF"))
+                    views.setInt(bgId, "setImageAlpha", 0)
+                    views.setInt(bgId, "setColorFilter", Color.parseColor("#00000000"))
                 }
-                views.setInt(icId, "setColorFilter", tintColor)
 
-                // Create PendingIntent for each button
                 val intent = Intent(context, RingerWidget::class.java).apply {
                     action = ACTION_CYCLE_RINGER
                     putExtra(EXTRA_TARGET_MODE, mode)
                 }
-                val pendingIntent = PendingIntent.getBroadcast(
-                    context, 
-                    mode, 
-                    intent, 
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
+                val pendingIntent = PendingIntent.getBroadcast(context, mode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 views.setOnClickPendingIntent(btnId, pendingIntent)
             }
 
@@ -82,86 +111,59 @@ class RingerWidget : AppWidgetProvider() {
         if (intent.action == ACTION_CYCLE_RINGER) {
             val targetMode = intent.getIntExtra(EXTRA_TARGET_MODE, -1)
             if (targetMode != -1) {
-                val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-                val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                val prefs = context.getSharedPreferences("ringer_prefs", Context.MODE_PRIVATE)
+                val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
                 try {
-                    // Step 1: Save volume if currently in RING mode
-                    if (audioManager.ringerMode == AudioManager.RINGER_MODE_NORMAL) {
-                        val currentVol = audioManager.getStreamVolume(AudioManager.STREAM_RING)
-                        if (currentVol > 0) {
-                            prefs.edit().putInt("saved_ring_volume", currentVol).apply()
+                    when (targetMode) {
+                        AudioManager.RINGER_MODE_NORMAL -> {
+                            audio.ringerMode = AudioManager.RINGER_MODE_NORMAL
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                restoreAllVolumes(context, audio)
+                                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                                val savedMedia = prefs.getInt(KEY_MEDIA_VOL, -1)
+                                val maxMedia = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                                val restoreMedia = if (savedMedia > 0) savedMedia else (maxMedia * 0.6).toInt()
+                                try {
+                                    audio.setStreamVolume(AudioManager.STREAM_MUSIC, restoreMedia, 0)
+                                } catch (e: Exception) {}
+                            }, 300)
+                        }
+                        AudioManager.RINGER_MODE_VIBRATE -> {
+                            saveAllVolumes(context, audio)
+                            audio.ringerMode = AudioManager.RINGER_MODE_VIBRATE
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                try { audio.setStreamVolume(AudioManager.STREAM_RING, 0, AudioManager.FLAG_SHOW_UI) } catch (e: Exception) {}
+                                try { audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, 0, 0) } catch (e: Exception) {}
+                                try { audio.setStreamVolume(AudioManager.STREAM_ALARM, 0, 0) } catch (e: Exception) {}
+                                try { audio.setStreamVolume(AudioManager.STREAM_SYSTEM, 0, 0) } catch (e: Exception) {}
+                                try { audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0) } catch (e: Exception) {}
+                            }, 300)
+                        }
+                        AudioManager.RINGER_MODE_SILENT -> {
+                            saveAllVolumes(context, audio)
+                            audio.ringerMode = AudioManager.RINGER_MODE_SILENT
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                try { audio.setStreamVolume(AudioManager.STREAM_RING, 0, AudioManager.FLAG_SHOW_UI) } catch (e: Exception) {}
+                                try { audio.setStreamVolume(AudioManager.STREAM_NOTIFICATION, 0, 0) } catch (e: Exception) {}
+                                try { audio.setStreamVolume(AudioManager.STREAM_ALARM, 0, 0) } catch (e: Exception) {}
+                                try { audio.setStreamVolume(AudioManager.STREAM_SYSTEM, 0, 0) } catch (e: Exception) {}
+                                try { audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0) } catch (e: Exception) {}
+                                try { audio.setStreamVolume(AudioManager.STREAM_VOICE_CALL, 0, 0) } catch (e: Exception) {}
+
+                                Handler(Looper.getMainLooper()).postDelayed({
+                                    try { audio.setStreamVolume(AudioManager.STREAM_RING, 0, AudioManager.FLAG_SHOW_UI) } catch (e: Exception) {}
+                                    try { audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0) } catch (e: Exception) {}
+                                }, 500)
+                            }, 300)
                         }
                     }
+                } catch (e: Exception) { e.printStackTrace() }
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !notificationManager.isNotificationPolicyAccessGranted) {
-                        val settingsIntent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        context.startActivity(settingsIntent)
-                        return
-                    }
-
-                    // Set Ringer Mode
-                    audioManager.ringerMode = targetMode
-
-                    if (targetMode == AudioManager.RINGER_MODE_NORMAL) {
-                        // Step 3: Restore volume
-                        val savedVol = prefs.getInt("saved_ring_volume", -1)
-                        val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_RING)
-                        val restoreVol = if (savedVol > 0) savedVol else (maxVol * 0.6).toInt()
-
-                        try {
-                            // Step 4: Use FLAG_SHOW_UI for Samsung Android 16 on STREAM_RING
-                            audioManager.setStreamVolume(AudioManager.STREAM_RING, restoreVol, AudioManager.FLAG_SHOW_UI)
-                            audioManager.setStreamVolume(AudioManager.STREAM_NOTIFICATION, restoreVol, 0)
-                            audioManager.setStreamVolume(AudioManager.STREAM_SYSTEM, audioManager.getStreamMaxVolume(AudioManager.STREAM_SYSTEM), 0)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    } else {
-                        // Step 2: Mute all relevant streams
-                        val streams = listOf(
-                            AudioManager.STREAM_RING,
-                            AudioManager.STREAM_NOTIFICATION,
-                            AudioManager.STREAM_ALARM,
-                            AudioManager.STREAM_SYSTEM,
-                            AudioManager.STREAM_MUSIC
-                        )
-
-                        for (stream in streams) {
-                            try {
-                                if (stream == AudioManager.STREAM_RING) {
-                                    // Step 4: Use FLAG_SHOW_UI for Samsung
-                                    audioManager.setStreamVolume(stream, 0, AudioManager.FLAG_SHOW_UI)
-                                } else {
-                                    audioManager.setStreamVolume(stream, 0, 0)
-                                }
-                            } catch (e: Exception) {
-                                // Skip protected streams
-                            }
-                        }
-                        
-                        // Double set for Silent to be sure
-                        if (targetMode == AudioManager.RINGER_MODE_SILENT) {
-                            audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-                        }
-                    }
-                } catch (se: SecurityException) {
-                    val settingsIntent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS).apply {
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    context.startActivity(settingsIntent)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                val manager = AppWidgetManager.getInstance(context)
+                val ids = manager.getAppWidgetIds(ComponentName(context, RingerWidget::class.java))
+                for (id in ids) {
+                    updateWidget(context, manager, id, forcedMode = targetMode)
                 }
-
-                // Refresh all widget instances
-                val appWidgetManager = AppWidgetManager.getInstance(context)
-                val componentName = ComponentName(context, RingerWidget::class.java)
-                val appWidgetIds = appWidgetManager.getAppWidgetIds(componentName)
-                onUpdate(context, appWidgetManager, appWidgetIds)
             }
         }
     }

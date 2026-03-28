@@ -6,4 +6,5 @@
   android:updatePeriodMillis="0"
   android:initialLayout="@layout/widget_ringer"
   android:resizeMode="horizontal"
+  android:previewImage="@mipmap/ic_launcher"
   android:widgetCategory="home_screen" />

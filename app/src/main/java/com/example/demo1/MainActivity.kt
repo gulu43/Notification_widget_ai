@@ -1,20 +1,23 @@
 package com.example.demo1
 
+import android.app.NotificationManager
+import android.content.Intent
 import android.os.Bundle
-import android.widget.TextView
-import android.view.Gravity
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
-        val textView = TextView(this).apply {
-            text = "Ringer Widget Installed!\n\nTo use it:\n1. Long press on your home screen\n2. Select Widgets\n3. Find 'DEmo1' and drag the 'Ringer Mode Widget' to your screen."
-            gravity = Gravity.CENTER
-            setPadding(64, 64, 64, 64)
-            textSize = 18f
+
+        // Request DND access on first launch — needed for true silent on Samsung
+        val notifManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        if (!notifManager.isNotificationPolicyAccessGranted) {
+            startActivity(
+                Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+            )
         }
-        setContentView(textView)
+
+        finish()
     }
 }
