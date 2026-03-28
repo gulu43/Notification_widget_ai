@@ -1,5 +1,6 @@
 package com.example.demo1
 
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -10,6 +11,7 @@ import android.graphics.Color
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.widget.RemoteViews
 
 class RingerWidget : AppWidgetProvider() {
@@ -137,9 +139,18 @@ class RingerWidget : AppWidgetProvider() {
             val targetMode = intent.getIntExtra(EXTRA_TARGET_MODE, -1)
             if (targetMode != -1) {
                 val audio = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                val notifManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                
                 try {
                     when (targetMode) {
                         AudioManager.RINGER_MODE_NORMAL -> {
+                            // Cancel silent DND if coming from silent mode
+                            try {
+                                if (notifManager.isNotificationPolicyAccessGranted) {
+                                    notifManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+                                }
+                            } catch (e: Exception) {}
+
                             audio.ringerMode = AudioManager.RINGER_MODE_NORMAL
                             Handler(Looper.getMainLooper()).postDelayed({
                                 restoreAllVolumes(context, audio)
@@ -153,6 +164,13 @@ class RingerWidget : AppWidgetProvider() {
                             }, 300)
                         }
                         AudioManager.RINGER_MODE_VIBRATE -> {
+                            // Cancel silent DND if coming from silent mode
+                            try {
+                                if (notifManager.isNotificationPolicyAccessGranted) {
+                                    notifManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+                                }
+                            } catch (e: Exception) {}
+
                             saveAllVolumes(context, audio)
                             audio.ringerMode = AudioManager.RINGER_MODE_VIBRATE
                             Handler(Looper.getMainLooper()).postDelayed({
@@ -164,6 +182,20 @@ class RingerWidget : AppWidgetProvider() {
                             }, 300)
                         }
                         AudioManager.RINGER_MODE_SILENT -> {
+                            // Samsung Android 16 fix — must use INTERRUPTION_FILTER_NONE
+                            // RINGER_MODE_SILENT alone does not stop vibration on Samsung
+                            if (notifManager.isNotificationPolicyAccessGranted) {
+                                // This is the ONLY thing that stops vibration on Samsung Android 16
+                                notifManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
+                            } else {
+                                // Permission not granted — send user to grant it
+                                val dndIntent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+                                dndIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                context.startActivity(dndIntent)
+                                // Do not proceed until permission granted
+                                return
+                            }
+
                             saveAllVolumes(context, audio)
                             audio.ringerMode = AudioManager.RINGER_MODE_SILENT
                             Handler(Looper.getMainLooper()).postDelayed({
