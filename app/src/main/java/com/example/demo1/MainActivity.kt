@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -14,7 +15,15 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Info button — set AFTER setContentView
+        val btnInfo = findViewById<ImageButton>(R.id.btn_info)
+        btnInfo.setOnClickListener {
+            startActivity(Intent(this, AboutActivity::class.java))
+        }
+
         checkAndShowPermission()
+        updatePermissionStatus()
     }
 
     override fun onResume() {

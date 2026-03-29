@@ -166,7 +166,7 @@ class RingerWidget : AppWidgetProvider() {
                                 try {
                                     audio.setStreamVolume(AudioManager.STREAM_MUSIC, restoreMedia, 0)
                                 } catch (e: Exception) {}
-                            }, 300)
+                            }, 150)
                         }
                         AudioManager.RINGER_MODE_VIBRATE -> {
                             // Cancel silent DND if coming from silent mode
@@ -184,7 +184,7 @@ class RingerWidget : AppWidgetProvider() {
                                 try { audio.setStreamVolume(AudioManager.STREAM_ALARM, 0, 0) } catch (e: Exception) {}
                                 try { audio.setStreamVolume(AudioManager.STREAM_SYSTEM, 0, 0) } catch (e: Exception) {}
                                 try { audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0) } catch (e: Exception) {}
-                            }, 300)
+                            }, 150)
                         }
                         AudioManager.RINGER_MODE_SILENT -> {
                             // Samsung Android 16 fix — must use INTERRUPTION_FILTER_NONE
@@ -214,8 +214,8 @@ class RingerWidget : AppWidgetProvider() {
                                 Handler(Looper.getMainLooper()).postDelayed({
                                     try { audio.setStreamVolume(AudioManager.STREAM_RING, 0, AudioManager.FLAG_SHOW_UI) } catch (e: Exception) {}
                                     try { audio.setStreamVolume(AudioManager.STREAM_MUSIC, 0, 0) } catch (e: Exception) {}
-                                }, 500)
-                            }, 300)
+                                }, 250)
+                            }, 150)
                         }
                     }
                 } catch (e: Exception) { e.printStackTrace() }
