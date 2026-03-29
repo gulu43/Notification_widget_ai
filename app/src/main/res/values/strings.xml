@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Custom Widget</string>
+    <string name="app_name">Ringer Widget</string>
     <string name="widget_description">Switch Ring, Vibrate, Silent</string>
 </resources>
