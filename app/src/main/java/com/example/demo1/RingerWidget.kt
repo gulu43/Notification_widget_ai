@@ -63,57 +63,57 @@ class RingerWidget : AppWidgetProvider() {
             val mode = forcedMode ?: audioManager.ringerMode
             val views = RemoteViews(context.packageName, R.layout.widget_ringer)
 
-            // ACTIVE icon color — Specific Blue
-            val activeColor = Color.parseColor("#0481FF")
-            // INACTIVE icon color — Medium Grey
-            val inactiveColor = Color.parseColor("#7A7A7A")
+            // Read colors from resources — Android picks day or night version automatically
+            val activeIconColor  = context.getColor(R.color.widget_icon_active)
+            val inactiveIconColor = context.getColor(R.color.widget_icon_inactive)
+            val activeCircleColor = context.getColor(R.color.widget_circle_active)
 
             // ---- RING is active ----
             if (mode == AudioManager.RINGER_MODE_NORMAL) {
                 // Ring active
                 views.setInt(R.id.bg_ring,    "setImageAlpha", 255)
-                views.setInt(R.id.bg_ring,    "setColorFilter", Color.parseColor("#FFFFFF"))
-                views.setInt(R.id.icon_ring,  "setColorFilter", activeColor)
+                views.setInt(R.id.bg_ring,    "setColorFilter", activeCircleColor)
+                views.setInt(R.id.icon_ring,  "setColorFilter", activeIconColor)
 
                 // Vibrate inactive
                 views.setInt(R.id.bg_vibrate,   "setImageAlpha", 0)
-                views.setInt(R.id.icon_vibrate, "setColorFilter", inactiveColor)
+                views.setInt(R.id.icon_vibrate, "setColorFilter", inactiveIconColor)
 
                 // Silent inactive
                 views.setInt(R.id.bg_silent,   "setImageAlpha", 0)
-                views.setInt(R.id.icon_silent, "setColorFilter", inactiveColor)
+                views.setInt(R.id.icon_silent, "setColorFilter", inactiveIconColor)
             }
 
             // ---- VIBRATE is active ----
             if (mode == AudioManager.RINGER_MODE_VIBRATE) {
                 // Vibrate active
                 views.setInt(R.id.bg_vibrate,   "setImageAlpha", 255)
-                views.setInt(R.id.bg_vibrate,   "setColorFilter", Color.parseColor("#FFFFFF"))
-                views.setInt(R.id.icon_vibrate, "setColorFilter", activeColor)
+                views.setInt(R.id.bg_vibrate,   "setColorFilter", activeCircleColor)
+                views.setInt(R.id.icon_vibrate, "setColorFilter", activeIconColor)
 
                 // Ring inactive
                 views.setInt(R.id.bg_ring,   "setImageAlpha", 0)
-                views.setInt(R.id.icon_ring, "setColorFilter", inactiveColor)
+                views.setInt(R.id.icon_ring, "setColorFilter", inactiveIconColor)
 
                 // Silent inactive
                 views.setInt(R.id.bg_silent,   "setImageAlpha", 0)
-                views.setInt(R.id.icon_silent, "setColorFilter", inactiveColor)
+                views.setInt(R.id.icon_silent, "setColorFilter", inactiveIconColor)
             }
 
             // ---- SILENT is active ----
             if (mode == AudioManager.RINGER_MODE_SILENT) {
                 // Silent active
                 views.setInt(R.id.bg_silent,   "setImageAlpha", 255)
-                views.setInt(R.id.bg_silent,   "setColorFilter", Color.parseColor("#FFFFFF"))
-                views.setInt(R.id.icon_silent, "setColorFilter", activeColor)
+                views.setInt(R.id.bg_silent,   "setColorFilter", activeCircleColor)
+                views.setInt(R.id.icon_silent, "setColorFilter", activeIconColor)
 
                 // Ring inactive
                 views.setInt(R.id.bg_ring,   "setImageAlpha", 0)
-                views.setInt(R.id.icon_ring, "setColorFilter", inactiveColor)
+                views.setInt(R.id.icon_ring, "setColorFilter", inactiveIconColor)
 
                 // Vibrate inactive
                 views.setInt(R.id.bg_vibrate,   "setImageAlpha", 0)
-                views.setInt(R.id.icon_vibrate, "setColorFilter", inactiveColor)
+                views.setInt(R.id.icon_vibrate, "setColorFilter", inactiveIconColor)
             }
 
             val modes = listOf(AudioManager.RINGER_MODE_NORMAL, AudioManager.RINGER_MODE_VIBRATE, AudioManager.RINGER_MODE_SILENT)

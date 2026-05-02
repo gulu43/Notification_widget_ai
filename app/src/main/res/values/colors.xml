@@ -7,6 +7,9 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="icon_ring">#E53935</color>
-    <color name="icon_inactive">#8FA896</color>
+    
+    <!-- Light mode colors -->
+    <color name="widget_icon_active">#0481FF</color>
+    <color name="widget_icon_inactive">#9E9E9E</color>
+    <color name="widget_circle_active">#FFFFFF</color>
 </resources>

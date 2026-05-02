@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark mode colors -->
+    <color name="widget_icon_active">#1E88E5</color>
+    <color name="widget_icon_inactive">#7A7A7A</color>
+    <color name="widget_circle_active">#FFFFFF</color>
+</resources>
